@@ -28,7 +28,7 @@ export default async function DashboardPage() {
           <div className="space-y-4">
             <p className="text-ink-600">What would you like to do?</p>
             <div className="grid grid-cols-1 gap-3">
-              <Link href="/" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
+              <Link href="/claim" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
                 <span className="text-xl">🏪</span>
                 <div>
                   <p className="font-semibold text-sm">Claim a listing</p>
