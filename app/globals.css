@@ -2,26 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@font-face {
+  font-family: "PP Formula";
+  src: url("/fonts/PPFormula-Light.otf") format("opentype");
+  font-weight: 300; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "PP Formula";
+  src: url("/fonts/PPFormula-Medium.otf") format("opentype");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "PP Formula";
+  src: url("/fonts/PPFormula-Extrabold.otf") format("opentype");
+  font-weight: 800; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "PP Formula Narrow";
+  src: url("/fonts/PPFormula-NarrowSemibold.otf") format("opentype");
+  font-weight: 600; font-style: normal; font-display: swap;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+:root {
+  --li-yellow: #ffd100; --li-yellow-700: #d9b000; --li-yellow-100: #fff6cc;
+  --li-red: #f9465c; --li-red-700: #d9304a; --li-red-100: #ffd9de;
+  --li-green: #14d592; --li-green-700: #0fae77; --li-green-100: #c9f4e2;
+  --li-teal: #51d9dd; --li-teal-700: #2eb8bc; --li-teal-100: #d6f5f6;
+  --li-blue-700: #1a35d9; --li-blue-100: #d6deff;
+  --ink-1000: #0a0c10; --ink-900: #14171d; --ink-800: #1f242c;
+  --ink-700: #353c47; --ink-600: #4f5763; --ink-500: #6b7380;
+  --ink-400: #8f96a1; --ink-300: #b8bdc5; --ink-200: #dadde2;
+  --ink-150: #e8eaee; --ink-100: #f1f2f5; --ink-50: #f7f8fa; --ink-0: #ffffff;
+  --paper: #fbf9f4;
 }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-}
-
-@layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  font-family: "PP Formula", system-ui, sans-serif;
+  font-weight: 500;
+  color: var(--ink-1000);
+  background: var(--ink-0);
 }
