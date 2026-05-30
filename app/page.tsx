@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { Nav } from '@/components/Nav'
-import { DirectoryExplorer, type DirectoryFilters } from '@/components/DirectoryExplorer'
+import { type DirectoryFilters } from '@/components/DirectoryExplorer'
+import { SectionTabs, type DirListing } from '@/components/SectionTabs'
 import type { Business } from '@/types/business'
 
 function parseList(v: string | undefined): string[] {
@@ -20,6 +21,16 @@ export default async function Home({
     .limit(1000)
 
   const businesses = (data as Business[] | null) ?? []
+
+  // Save / Swap / Share / Support sections come from the shared directory_listings view.
+  const { data: listingData } = await supabase
+    .from('directory_listings')
+    .select('id,section,name,slug,category_name,city,state,latitude,longitude,website,thumbnail_url,total_score,reviews_count,business_identities,is_women_owned')
+    .neq('section', 'spend')
+    .order('reviews_count', { ascending: false, nullsFirst: false })
+    .limit(2000)
+  const listings = (listingData as DirListing[] | null) ?? []
+
   const initial: DirectoryFilters = {
     industries: parseList(searchParams.industry),
     categories: parseList(searchParams.category),
@@ -44,7 +55,7 @@ export default async function Home({
       </header>
       <div className="hazard-stripe" />
       <main className="max-w-7xl mx-auto px-4 py-10 space-y-8">
-        <DirectoryExplorer businesses={businesses} initial={initial} />
+        <SectionTabs businesses={businesses} listings={listings} initial={initial} />
       </main>
     </>
   )
