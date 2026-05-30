@@ -47,12 +47,14 @@ export function BusinessCard({ business }: { business: Business }) {
           <div className="flex flex-wrap gap-1">
             {business.business_identities.slice(0, 3).map(id => <IdentityBadge key={id} identity={id} />)}
           </div>
-          {business.total_score && (
-            <div className="flex items-center gap-2">
-              <StarRating score={business.total_score} />
-              {business.reviews_count && <span className="text-xs text-ink-400">({business.reviews_count})</span>}
-            </div>
-          )}
+          <div className="flex items-center gap-2 flex-wrap">
+            {business.claimed
+              ? <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-[#F2B400] text-[#0B0B0B] px-1.5 py-0.5">✓ Verified</span>
+              : <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-ink-150 text-ink-500 px-1.5 py-0.5">Not Verified</span>
+            }
+            {business.total_score && <StarRating score={business.total_score} />}
+            {business.total_score && business.reviews_count && <span className="text-xs text-ink-400">({business.reviews_count})</span>}
+          </div>
         </CardContent>
       </Card>
     </Link>

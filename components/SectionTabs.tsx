@@ -16,6 +16,7 @@ export type DirListing = {
   latitude: number | null; longitude: number | null; website: string | null
   thumbnail_url: string | null; total_score: number | null; reviews_count: number | null
   business_identities: string[] | null; is_women_owned: boolean | null
+  claimed: boolean | null
 }
 
 const SECTIONS = [

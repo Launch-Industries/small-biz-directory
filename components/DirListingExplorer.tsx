@@ -168,6 +168,12 @@ function DirListingCard({ row, section }: { row: DirListing; section: string }) 
             <Star className="w-3.5 h-3.5 fill-[#F2B400] text-[#F2B400]" />{row.total_score.toFixed(1)}
           </p>
         )}
+        <div className="pt-1">
+          {row.claimed
+            ? <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-[#F2B400] text-[#0B0B0B] px-1.5 py-0.5">✓ Verified</span>
+            : <span className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide bg-ink-150 text-ink-500 px-1.5 py-0.5">Not Verified</span>
+          }
+        </div>
         <div className="flex gap-3 text-xs pt-1">
           {row.website && (
             <a href={row.website} target="_blank" rel="noopener noreferrer"

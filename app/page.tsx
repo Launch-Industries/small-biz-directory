@@ -25,7 +25,7 @@ export default async function Home({
   // Save / Swap / Share / Support sections come from the shared directory_listings view.
   const { data: listingData } = await supabase
     .from('directory_listings')
-    .select('id,section,name,slug,category_name,city,state,latitude,longitude,website,thumbnail_url,total_score,reviews_count,business_identities,is_women_owned')
+    .select('id,section,name,slug,category_name,city,state,latitude,longitude,website,thumbnail_url,total_score,reviews_count,business_identities,is_women_owned,claimed')
     .neq('section', 'spend')
     .order('reviews_count', { ascending: false, nullsFirst: false })
     .limit(2000)
