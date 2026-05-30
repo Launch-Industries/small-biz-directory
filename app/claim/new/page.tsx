@@ -55,6 +55,14 @@ function NewListingForm() {
   const [selectedIdentities, setSelectedIdentities] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [draftError, setDraftError] = useState('')
+
+  function formatPhone(val: string) {
+    const d = val.replace(/\D/g, '').slice(0, 10)
+    if (d.length <= 3) return d
+    if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`
+  }
 
   function toggleIdentity(key: string) {
     setSelectedIdentities(prev =>
@@ -65,6 +73,7 @@ function NewListingForm() {
   async function draftWithAI() {
     if (!name.trim()) return
     setDrafting(true)
+    setDraftError('')
     try {
       const res = await fetch('/api/draft-description', {
         method: 'POST',
@@ -72,8 +81,11 @@ function NewListingForm() {
         body: JSON.stringify({ name: name.trim(), section, city: city.trim() }),
       })
       const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`)
       if (data.description) setDescription(data.description)
-    } catch { /* silent */ }
+    } catch (e) {
+      setDraftError(e instanceof Error ? e.message : 'AI draft failed')
+    }
     setDrafting(false)
   }
 
@@ -204,7 +216,7 @@ function NewListingForm() {
           </div>
           <div>
             <label className={label}>Phone <span className="font-normal normal-case text-ink-400">(optional)</span></label>
-            <input type="tel" value={phone} onChange={e => setPhone(e.target.value)}
+            <input type="tel" value={phone} onChange={e => setPhone(formatPhone(e.target.value))}
               placeholder="(206) 555-0100" className={input} />
           </div>
 
@@ -248,6 +260,7 @@ function NewListingForm() {
             <textarea value={description} onChange={e => setDescription(e.target.value)} rows={4}
               placeholder="Tell people what makes your business worth supporting…"
               className={`${input} resize-y`} />
+            {draftError && <p className="text-[#E0241F] text-xs mt-1">{draftError}</p>}
           </div>
 
           {/* Identity */}
