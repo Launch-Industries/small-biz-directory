@@ -2,7 +2,7 @@
 // Street View fallback thumbnails Google returned for photo-less businesses are
 // dead (403). Treat any non-displayable thumbnail as absent so callers fall back
 // to their placeholder instead of crashing the render.
-const DISPLAYABLE_HOSTS = ['googleusercontent.com', 'supabase.co', 'googleapis.com']
+const DISPLAYABLE_HOSTS = ['googleusercontent.com', 'supabase.co']
 
 export function displayableImage(url: string | null | undefined): string | null {
   if (!url) return null
