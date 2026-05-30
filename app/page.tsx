@@ -11,7 +11,7 @@ function parseList(v: string | undefined): string[] {
 export default async function Home({
   searchParams,
 }: {
-  searchParams: { industry?: string; category?: string; location?: string; identity?: string }
+  searchParams: { industry?: string; category?: string; location?: string; identity?: string; section?: string }
 }) {
   const supabase = await createClient()
   const { data } = await supabase
@@ -55,7 +55,7 @@ export default async function Home({
       </header>
       <div className="hazard-stripe" />
       <main className="max-w-7xl mx-auto px-4 py-10 space-y-8">
-        <SectionTabs businesses={businesses} listings={listings} initial={initial} />
+        <SectionTabs businesses={businesses} listings={listings} initial={initial} initialSection={searchParams.section} />
       </main>
     </>
   )

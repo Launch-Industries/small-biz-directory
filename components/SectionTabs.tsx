@@ -28,13 +28,26 @@ const SECTIONS = [
 type Key = (typeof SECTIONS)[number]['key']
 
 export function SectionTabs({
-  businesses, listings, initial,
+  businesses, listings, initial, initialSection,
 }: {
   businesses: Business[]
   listings: DirListing[]
   initial: DirectoryFilters
+  initialSection?: string
 }) {
-  const [active, setActive] = useState<Key>('spend')
+  const validKeys = SECTIONS.map(s => s.key) as string[]
+  const [active, setActive] = useState<Key>(
+    (initialSection && validKeys.includes(initialSection) ? initialSection : 'spend') as Key
+  )
+
+  function switchTab(key: Key) {
+    setActive(key)
+    const params = new URLSearchParams(window.location.search)
+    if (key === 'spend') params.delete('section')
+    else params.set('section', key)
+    const qs = params.toString()
+    window.history.replaceState(null, '', qs ? `?${qs}` : window.location.pathname)
+  }
   const counts: Record<string, number> = { spend: businesses.length }
   for (const l of listings) counts[l.section] = (counts[l.section] ?? 0) + 1
 
@@ -47,7 +60,7 @@ export function SectionTabs({
           return (
             <button
               key={s.key}
-              onClick={() => setActive(s.key)}
+              onClick={() => switchTab(s.key)}
               className={`text-left border-2 border-[#0B0B0B] p-3 transition ${on ? 'bg-[#0B0B0B] text-[#F6F3EA]' : 'bg-[#F6F3EA] hover:bg-[#ECE7D6]'}`}
             >
               <span className="block h-1.5 w-full mb-2" style={{ background: s.accent }} />
