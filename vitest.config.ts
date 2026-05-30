@@ -8,8 +8,16 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: ['./vitest.setup.ts'],
     globals: true,
+    server: {
+      deps: {
+        inline: ['server-only'],
+      },
+    },
   },
   resolve: {
-    alias: { '@': path.resolve(__dirname, '.') },
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+      'server-only': path.resolve(__dirname, '__mocks__/server-only.ts'),
+    },
   },
 })

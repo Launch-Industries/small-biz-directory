@@ -3,6 +3,7 @@
 // dev token) → DEV MOCK. Every step fails safe to mock so the verification flow
 // always completes, even if Box AI isn't enabled or a token lapses.
 import 'server-only'
+import { createHmac, timingSafeEqual } from 'crypto'
 
 const { BOX_CLIENT_ID, BOX_CLIENT_SECRET, BOX_ENTERPRISE_ID, BOX_TOKEN } = process.env
 const BOX_FOLDER_ID = process.env.BOX_FOLDER_ID ?? '0'
@@ -174,5 +175,22 @@ function mockExtract(): Record<string, string> {
     certifying_organization: 'DEV MOCK — National Certification Body',
     owner_name: 'Jane Q. Owner',
     expiration_date: '2027-12-31',
+  }
+}
+
+// Box computes: base64(HMAC-SHA256(deliveryTimestamp + rawBody, signingKey))
+export function verifyBoxWebhookSignature(
+  rawBody: string,
+  deliveryTimestamp: string,
+  signature: string,
+  secret: string,
+): boolean {
+  if (!signature || !secret) return false
+  const message = deliveryTimestamp + rawBody
+  const expected = createHmac('sha256', secret).update(message).digest('base64')
+  try {
+    return timingSafeEqual(Buffer.from(signature, 'base64'), Buffer.from(expected, 'base64'))
+  } catch {
+    return false
   }
 }
