@@ -20,4 +20,7 @@ export interface Business {
   verified_identities: string[];
   permanently_closed: boolean; claimed: boolean; claimed_by: string | null;
   owner_description: string | null; owner_hours: string | null;
+  location_type: string | null;
+  owner_image_urls: string[];
+  owner_doc_box_file_ids: string[];
 }

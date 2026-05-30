@@ -18,7 +18,6 @@ export default async function Home({
     .from('businesses')
     .select('*')
     .order('total_score', { ascending: false, nullsFirst: false })
-    .limit(1000)
 
   const businesses = (data as Business[] | null) ?? []
 

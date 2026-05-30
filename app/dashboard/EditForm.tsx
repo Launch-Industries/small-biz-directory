@@ -1,12 +1,23 @@
 'use client'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 import HoursEditor from '@/components/HoursEditor'
 import PhotoUploader from '@/components/PhotoUploader'
 import type { Business } from '@/types/business'
 
+const LOCATION_TYPES = [
+  { value: 'storefront',      label: 'Storefront' },
+  { value: 'by_appointment',  label: 'By Appointment' },
+  { value: 'service_area',    label: 'Service Area' },
+  { value: 'online_only',     label: 'Online Only' },
+] as const
+
 export default function EditForm({ business }: { business: Business }) {
+  const router = useRouter()
   const supabase = createClient()
+
   const [description, setDescription] = useState(business.owner_description ?? '')
   const [hours, setHours] = useState(business.owner_hours ?? '')
   const [msg, setMsg] = useState('')
