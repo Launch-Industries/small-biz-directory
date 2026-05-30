@@ -9,7 +9,7 @@ export default async function MapPage() {
   const supabase = await createClient();
   const { data } = await supabase
     .from('businesses')
-    .select('id, slug, name, latitude, longitude')
+    .select('id, slug, name, category_name, neighborhood, city, latitude, longitude')
     .not('latitude', 'is', null)
     .not('longitude', 'is', null);
 

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { BusinessListing } from '@/components/BusinessListing'
 import { Nav } from '@/components/Nav'
+import { SITE_URL, itemListSchema, breadcrumbSchema } from '@/lib/schema'
 import type { Business } from '@/types/business'
 import type { Metadata } from 'next'
 
@@ -21,8 +22,17 @@ export default async function NeighborhoodPage({ params }: Props) {
     .order('total_score', { ascending: false, nullsFirst: false })
     .limit(100)
 
+  const list = (businesses ?? []) as Business[]
+  const itemListLd = itemListSchema(list, { name: `Businesses in ${neighborhood}, Seattle` })
+  const breadcrumbLd = breadcrumbSchema([
+    { name: 'Home', url: `${SITE_URL}/` },
+    { name: neighborhood, url: `${SITE_URL}/neighborhood/${encodeURIComponent(neighborhood)}` },
+  ])
+
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }} />
       <Nav />
       <main className="max-w-6xl mx-auto px-4 py-8">
         <h1 className="font-formula font-extrabold text-2xl mb-1">Businesses in {neighborhood}, Seattle</h1>
