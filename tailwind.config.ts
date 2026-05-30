@@ -5,20 +5,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // --- LIDS brand palette (unchanged) ---
+        // --- 5S Ethos "Hazard" palette (Xerox Black-Bloc). No blue, ever. ---
+        '5s': {
+          black: '#0B0B0B', paper: '#F6F3EA', newsprint: '#ECE7D6', white: '#FFFFFF',
+          red: '#E0241F', 'red-ink': '#B81A16', 'red-press': '#A8160F',
+          amber: '#F2B400', 'amber-ink': '#8A6500',
+        },
+        // LIDS class names remapped onto the Hazard palette so existing
+        // utilities (bg-li-red, text-ink-700, …) adopt the 5S brand at once.
         li: {
-          yellow: '#ffd100', 'yellow-700': '#d9b000', 'yellow-100': '#fff6cc',
-          red: '#f9465c', 'red-700': '#d9304a', 'red-100': '#ffd9de',
-          green: '#14d592', 'green-700': '#0fae77', 'green-100': '#c9f4e2',
-          teal: '#51d9dd', 'teal-700': '#2eb8bc', 'teal-100': '#d6f5f6',
-          'blue-700': '#1a35d9', 'blue-100': '#d6deff',
+          yellow: '#F2B400', 'yellow-700': '#8A6500', 'yellow-100': '#FBE8A6',
+          red: '#E0241F', 'red-700': '#B81A16', 'red-100': '#F7D6D4',
+          green: '#2E7D32', 'green-700': '#1E5E22', 'green-100': '#D6E8D6',
+          teal: '#F2B400', 'teal-700': '#8A6500', 'teal-100': '#FBE8A6',
+          'blue-700': '#B81A16', 'blue-100': '#F7D6D4',
         },
         ink: {
-          1000: '#0a0c10', 900: '#14171d', 800: '#1f242c', 700: '#353c47',
-          600: '#4f5763', 500: '#6b7380', 400: '#8f96a1', 300: '#b8bdc5',
-          200: '#dadde2', 150: '#e8eaee', 100: '#f1f2f5', 50: '#f7f8fa', 0: '#ffffff',
+          1000: '#0B0B0B', 900: '#1C1A17', 800: '#3D3A34', 700: '#3D3A34',
+          600: '#6E6A60', 500: '#6E6A60', 400: '#A6A299', 300: '#A6A299',
+          200: '#D7D2C6', 150: '#D7D2C6', 100: '#E7E2D6', 50: '#ECE7D6', 0: '#FFFFFF',
         },
-        paper: '#fbf9f4',
+        paper: '#F6F3EA',
         // --- shadcn/ui semantic tokens (bridged onto ink/li via CSS vars) ---
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -60,8 +67,12 @@ const config: Config = {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        formula: ['"PP Formula"', 'system-ui', 'sans-serif'],
-        narrow: ['"PP Formula Narrow"', 'system-ui', 'sans-serif'],
+        // Remapped to the 5S Ethos type system (Xerox Black-Bloc).
+        formula: ['"Saira Stencil One"', '"Archivo Black"', 'system-ui', 'sans-serif'],
+        narrow: ['Poppins', 'system-ui', 'sans-serif'],
+        stencil: ['"Saira Stencil One"', '"Archivo Black"', 'system-ui', 'sans-serif'],
+        heavy: ['"Archivo Black"', 'Poppins', 'system-ui', 'sans-serif'],
+        marker: ['"Permanent Marker"', 'cursive'],
       },
       keyframes: {
         'accordion-down': {

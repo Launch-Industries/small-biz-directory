@@ -1,6 +1,19 @@
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Permanent+Marker&family=Poppins:ital,wght@0,400;0,600;0,700;0,800;0,900;1,600&family=Saira+Stencil+One&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===== 5S Ethos "Hazard" brand layer (Xerox Black-Bloc) ===== */
+@layer base {
+  body { background: #F6F3EA; color: #0B0B0B; font-family: 'Poppins', system-ui, -apple-system, sans-serif; }
+}
+/* Brand rule: no blue, ever. Repaint the app's blue links as Shock Red. */
+.text-blue-600 { color: #B81A16 !important; }
+.text-blue-600:hover { color: #A8160F !important; }
+/* Brand utilities */
+.hazard-stripe { height: 14px; background: repeating-linear-gradient(135deg, #F2B400 0 22px, #0B0B0B 22px 44px); }
+.stencil { font-family: 'Saira Stencil One', 'Archivo Black', system-ui, sans-serif; text-transform: uppercase; line-height: .92; }
+.pop-shadow { box-shadow: 5px 5px 0 #0B0B0B; }
 
 @font-face {
   font-family: "PP Formula";
