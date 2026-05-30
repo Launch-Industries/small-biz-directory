@@ -74,7 +74,7 @@ export function SectionTabs({
 
       {active === 'spend' ? (
         <DirectoryExplorer businesses={businesses} initial={initial} />
-      ) : active === 'save' || active === 'share' ? (
+      ) : active === 'save' || active === 'share' || active === 'swap' ? (
         <DirListingExplorer
           rows={listings.filter((l) => l.section === active)}
           section={active}
