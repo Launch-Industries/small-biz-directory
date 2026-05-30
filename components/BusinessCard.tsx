@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { IdentityBadge } from './IdentityBadge'
+import { displayableImage } from '@/lib/images'
 import type { Business } from '@/types/business'
 
 function StarRating({ score }: { score: number }) {
@@ -12,12 +13,13 @@ function StarRating({ score }: { score: number }) {
 }
 
 export function BusinessCard({ business }: { business: Business }) {
+  const thumbnail = displayableImage(business.thumbnail_url)
   return (
     <Link href={`/businesses/${business.slug}`}
       className="group block rounded-xl overflow-hidden border border-ink-150 bg-white transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
       <div className="relative aspect-[4/3] bg-ink-100">
-        {business.thumbnail_url ? (
-          <Image src={business.thumbnail_url} alt={business.name} fill className="object-cover"
+        {thumbnail ? (
+          <Image src={thumbnail} alt={business.name} fill className="object-cover"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center bg-li-yellow-100">
