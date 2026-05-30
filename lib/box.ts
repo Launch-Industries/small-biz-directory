@@ -6,6 +6,7 @@ import 'server-only'
 
 const { BOX_CLIENT_ID, BOX_CLIENT_SECRET, BOX_ENTERPRISE_ID, BOX_TOKEN } = process.env
 const BOX_FOLDER_ID = process.env.BOX_FOLDER_ID ?? '0'
+const BOX_SIGN_FOLDER_ID = process.env.BOX_SIGN_FOLDER_ID ?? ''
 const hasCCG = Boolean(BOX_CLIENT_ID && BOX_CLIENT_SECRET && BOX_ENTERPRISE_ID)
 
 export const boxEnabled = () => hasCCG || Boolean(BOX_TOKEN)
@@ -113,6 +114,52 @@ export async function boxAiExtract(
   } catch (e) {
     console.warn('Box AI Extract error; using mock extraction.', e)
     return { values: mockExtract(), aiLive: false }
+  }
+}
+
+// Send a Box Sign request for an ownership attestation. Uploads the attestation
+// text to Box, then creates a sign request emailing the owner to e-sign.
+// Returns { signRequestId, status, signLive }. Fails safe (signLive=false).
+export async function sendOwnershipAttestation(
+  businessName: string,
+  signerEmail: string,
+  signerName: string,
+): Promise<{ signRequestId: string | null; status: string; signLive: boolean }> {
+  const token = await getAccessToken()
+  if (!token || !BOX_SIGN_FOLDER_ID) return { signRequestId: null, status: 'mock', signLive: false }
+
+  const doc = `OWNERSHIP ATTESTATION — 5S Ethos\n\nI attest that I am an owner of "${businessName}" and that the ownership and certification information submitted to the 5S Ethos directory is true and accurate.\n\nSigner: ${signerName}\nSignature: [[s|1]]\nDate: [[d|1]]\n`
+
+  try {
+    // 1) upload the attestation document
+    const form = new FormData()
+    form.append('attributes', JSON.stringify({ name: `attestation-${Date.now()}.txt`, parent: { id: BOX_SIGN_FOLDER_ID } }))
+    form.append('file', new Blob([new Uint8Array(Buffer.from(doc))]), 'attestation.txt')
+    const up = await fetch('https://upload.box.com/api/2.0/files/content', {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form,
+    })
+    if (!up.ok) return { signRequestId: null, status: 'mock', signLive: false }
+    const fileId = (await up.json()).entries[0].id as string
+
+    // 2) create the sign request (Box emails the signer)
+    const sr = await fetch('https://api.box.com/2.0/sign_requests', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_files: [{ id: fileId, type: 'file' }],
+        signers: [{ email: signerEmail, role: 'signer' }],
+        parent_folder: { id: BOX_SIGN_FOLDER_ID, type: 'folder' },
+      }),
+    })
+    if (!sr.ok) {
+      console.warn('Box Sign create failed:', sr.status, await sr.text())
+      return { signRequestId: null, status: 'error', signLive: false }
+    }
+    const j = await sr.json()
+    return { signRequestId: j.id ?? null, status: j.status ?? 'created', signLive: true }
+  } catch (e) {
+    console.warn('Box Sign error:', e)
+    return { signRequestId: null, status: 'error', signLive: false }
   }
 }
 

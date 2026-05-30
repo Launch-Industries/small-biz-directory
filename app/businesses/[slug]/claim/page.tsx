@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ShieldCheck, Upload, Loader2 } from 'lucide-react'
+import { ShieldCheck, Upload, Loader2, PenLine } from 'lucide-react'
 import { createClient } from '@/lib/supabase-browser'
 
 const IDENTITY_LABELS: Record<string, string> = {
@@ -32,6 +32,9 @@ export default function ClaimPage() {
   const [file, setFile] = useState<File | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
+  // Box Sign attestation state
+  const [signing, setSigning] = useState(false)
+  const [signMsg, setSignMsg] = useState('')
 
   useEffect(() => {
     supabase.from('businesses').select('name, business_identities, verified_identities').eq('slug', slug).single()
@@ -71,6 +74,22 @@ export default function ClaimPage() {
     if (!res.ok) { setError(json.error ?? 'Verification failed'); return }
     setResult(json)
     if (json.status === 'verified') setVerified((v) => Array.from(new Set([...v, identity])))
+  }
+
+  async function handleAttest() {
+    setSigning(true); setSignMsg(''); setError('')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/login'); return }
+    const res = await fetch('/api/attest-ownership', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug, identity }),
+    })
+    const json = await res.json()
+    setSigning(false)
+    if (!res.ok) { setError(json.error ?? 'Could not send attestation'); return }
+    setSignMsg(json.sent
+      ? `Attestation sent to ${json.signerEmail} via Box Sign — check your inbox to e-sign. ✍️`
+      : 'Attestation prepared (Box Sign simulated — enable on the account to send for real).')
   }
 
   if (loading) return <p className="p-8">Loading…</p>
@@ -147,6 +166,18 @@ export default function ClaimPage() {
               </p>
             </div>
           )}
+
+          {/* Box Sign ownership attestation */}
+          <div className="mt-5 pt-4 border-t border-ink-150">
+            <p className="text-sm text-ink-600 mb-2">
+              Prefer to attest by signature? Send yourself an ownership attestation to e-sign with <span className="font-semibold">Box Sign</span>.
+            </p>
+            <button onClick={handleAttest} disabled={signing}
+              className="inline-flex items-center gap-2 border border-ink-300 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ink-50 disabled:opacity-40">
+              {signing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <><PenLine className="w-4 h-4" /> Sign attestation with Box Sign</>}
+            </button>
+            {signMsg && <p className="mt-2 text-sm text-li-green-700">{signMsg}</p>}
+          </div>
         </section>
       )}
     </main>
