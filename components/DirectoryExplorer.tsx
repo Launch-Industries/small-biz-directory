@@ -121,14 +121,16 @@ export function DirectoryExplorer({
 
   return (
     <div className="grid grid-cols-12 gap-6">
-      <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pr-2 space-y-6">
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search businesses…"
-          className="w-full border border-ink-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink-900"
-        />
+      <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:px-2 space-y-6">
+        <div className="px-0.5 py-0.5">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search businesses…"
+            className="w-full border border-ink-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink-900"
+          />
+        </div>
         <Form {...form}>
           <form className="space-y-6" onSubmit={e => e.preventDefault()}>
             <div className="flex items-center justify-between">

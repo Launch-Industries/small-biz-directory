@@ -58,13 +58,15 @@ export function DirListingExplorer({
     <div className="grid grid-cols-12 gap-6">
       {/* Sidebar */}
       <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:px-2 space-y-5">
-        <input
-          type="text"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder={`Search ${sectionLabel.toLowerCase()}…`}
-          className="w-full border border-ink-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink-900"
-        />
+        <div className="px-0.5 py-0.5">
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder={`Search ${sectionLabel.toLowerCase()}…`}
+            className="w-full border border-ink-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink-900"
+          />
+        </div>
 
         <div className="flex items-center justify-between">
           <h2 className="font-narrow font-semibold text-xs uppercase tracking-widest text-ink-500">Filters</h2>
