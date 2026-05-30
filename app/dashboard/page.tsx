@@ -35,21 +35,21 @@ export default async function DashboardPage() {
                   <p className="text-ink-500 text-xs mt-0.5">Manage a local business, credit union, share org, or barter network you run</p>
                 </div>
               </Link>
-              <Link href="https://5sethos.com/support.html" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
+              <Link href="/support" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
                 <span className="text-xl">🤝</span>
                 <div>
                   <p className="font-semibold text-sm">Post a support request</p>
                   <p className="text-ink-500 text-xs mt-0.5">Ask the community for help — for yourself, your business, or your org</p>
                 </div>
               </Link>
-              <Link href="https://5sethos.com/swap.html" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
+              <Link href="/swap" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
                 <span className="text-xl">🔄</span>
                 <div>
                   <p className="font-semibold text-sm">Post a swap</p>
                   <p className="text-ink-500 text-xs mt-0.5">Offer something to trade or list what you're looking for</p>
                 </div>
               </Link>
-              <Link href="https://5sethos.com/share.html" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
+              <Link href="/share" className="flex items-start gap-3 rounded-xl border border-ink-150 p-4 hover:bg-ink-50 transition-colors">
                 <span className="text-xl">🎁</span>
                 <div>
                   <p className="font-semibold text-sm">Give something away</p>
