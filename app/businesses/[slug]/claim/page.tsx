@@ -1,185 +1,254 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ShieldCheck, Upload, Loader2, PenLine } from 'lucide-react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase-browser'
+import { Nav } from '@/components/Nav'
+import DocumentUploader from '@/components/DocumentUploader'
+import { IDENTITY_CERTS } from '@/lib/identity-verify'
 
-const IDENTITY_LABELS: Record<string, string> = {
-  'Identifies as Black-owned': 'Black-Owned',
-  'Identifies as women-owned': 'Women-Owned',
-  'Identifies as LGBTQ+ owned': 'LGBTQ+-Owned',
-  'Identifies as Asian-owned': 'Asian-Owned',
-  'Identifies as Latino-owned': 'Latino-Owned',
-  'Identifies as veteran-owned': 'Veteran-Owned',
-  'Identifies as disabled-owned': 'Disabled-Owned',
-  'Identifies as Indigenous-owned': 'Indigenous-Owned',
-}
-
-type Result = { status: string; reason: string; extracted: Record<string, string>; label: string; boxUploadLive: boolean; aiLive: boolean }
+type AttestState = 'idle' | 'sending' | 'sent' | 'error'
 
 export default function ClaimPage() {
   const { slug } = useParams<{ slug: string }>()
   const router = useRouter()
   const supabase = createClient()
-  const [name, setName] = useState('')
-  const [identities, setIdentities] = useState<string[]>([])
-  const [verified, setVerified] = useState<string[]>([])
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(true)
 
-  // verification widget state
-  const [identity, setIdentity] = useState('')
-  const [file, setFile] = useState<File | null>(null)
-  const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState<Result | null>(null)
-  // Box Sign attestation state
-  const [signing, setSigning] = useState(false)
-  const [signMsg, setSignMsg] = useState('')
+  const [biz, setBiz] = useState<{ id: string; name: string; claimed_by: string | null; business_identities: string[]; verified_identities: string[] } | null>(null)
+  const [userEmail, setUserEmail] = useState('')
+  const [userId, setUserId] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [claiming, setClaiming] = useState(false)
+  const [claimError, setClaimError] = useState('')
+  const [verifiedSet, setVerifiedSet] = useState<Set<string>>(new Set())
+
+  const [attestState, setAttestState] = useState<AttestState>('idle')
+  const [attestError, setAttestError] = useState('')
 
   useEffect(() => {
-    supabase.from('businesses').select('name, business_identities, verified_identities').eq('slug', slug).single()
+    supabase.auth.getUser().then(({ data }) => {
+      if (!data.user) { router.replace('/login'); return }
+      setUserEmail(data.user.email ?? '')
+      setUserId(data.user.id)
+    })
+  }, [])
+
+  useEffect(() => {
+    supabase
+      .from('businesses')
+      .select('id, name, claimed_by, business_identities, verified_identities')
+      .eq('slug', slug)
+      .single()
       .then(({ data }) => {
         if (data) {
-          setName(data.name)
-          const ids = (data.business_identities ?? []).filter((i: string) => IDENTITY_LABELS[i])
-          setIdentities(ids)
-          setVerified(data.verified_identities ?? [])
-          setIdentity(ids[0] ?? '')
+          setBiz(data)
+          setVerifiedSet(new Set(data.verified_identities ?? []))
         }
         setLoading(false)
       })
   }, [slug])
 
   async function handleClaim() {
-    setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
-    const { error: err } = await supabase.from('businesses').update({
-      claimed: true, claimed_by: user.id, claimed_at: new Date().toISOString(),
+    setClaiming(true); setClaimError('')
+    const { error } = await supabase.from('businesses').update({
+      claimed: true, claimed_by: userId, claimed_at: new Date().toISOString(),
     }).eq('slug', slug)
-    if (err) { setError(err.message); return }
+    if (error) { setClaimError(error.message); setClaiming(false); return }
     router.push('/dashboard')
   }
 
-  async function handleVerify() {
-    if (!file || !identity) return
-    setSubmitting(true); setResult(null); setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
-    const fd = new FormData()
-    fd.append('slug', slug); fd.append('identity', identity); fd.append('file', file)
-    const res = await fetch('/api/verify-ownership', { method: 'POST', body: fd })
-    const json = await res.json()
-    setSubmitting(false)
-    if (!res.ok) { setError(json.error ?? 'Verification failed'); return }
-    setResult(json)
-    if (json.status === 'verified') setVerified((v) => Array.from(new Set([...v, identity])))
+  async function sendAttestation() {
+    setAttestState('sending'); setAttestError('')
+    try {
+      const res = await fetch('/api/attest-ownership', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? `Error ${res.status}`)
+      setAttestState('sent')
+    } catch (e) {
+      setAttestError((e as Error).message)
+      setAttestState('error')
+    }
   }
 
-  async function handleAttest() {
-    setSigning(true); setSignMsg(''); setError('')
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { router.push('/login'); return }
-    const res = await fetch('/api/attest-ownership', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, identity }),
-    })
-    const json = await res.json()
-    setSigning(false)
-    if (!res.ok) { setError(json.error ?? 'Could not send attestation'); return }
-    setSignMsg(json.sent
-      ? `Attestation sent to ${json.signerEmail} via Box Sign — check your inbox to e-sign. ✍️`
-      : 'Attestation prepared (Box Sign simulated — enable on the account to send for real).')
+  if (loading) {
+    return (
+      <>
+        <Nav />
+        <main className="max-w-xl mx-auto px-4 py-12 text-center text-ink-400 text-sm">Loading…</main>
+      </>
+    )
   }
 
-  if (loading) return <p className="p-8">Loading…</p>
+  if (!biz) {
+    return (
+      <>
+        <Nav />
+        <main className="max-w-xl mx-auto px-4 py-12 text-center">
+          <p className="text-ink-500">Listing not found.</p>
+          <Link href="/dashboard" className="text-[#E0241F] text-sm font-semibold mt-4 inline-block">← Back to dashboard</Link>
+        </main>
+      </>
+    )
+  }
+
+  if (biz.claimed_by && biz.claimed_by !== userId) {
+    return (
+      <>
+        <Nav />
+        <main className="max-w-xl mx-auto px-4 py-12 text-center">
+          <p className="font-formula font-extrabold text-xl mb-2 stencil">Already Claimed</p>
+          <p className="text-ink-500 text-sm">This listing has been claimed by another account.</p>
+        </main>
+      </>
+    )
+  }
+
+  const isUnclaimed = !biz.claimed_by
+  const verifiableIdentities = (biz.business_identities ?? []).filter(id => IDENTITY_CERTS[id])
+  const label = 'block text-[11px] font-bold uppercase tracking-widest text-ink-500 mb-3'
 
   return (
-    <main className="max-w-lg mx-auto px-4 py-12">
-      <h1 className="font-formula font-extrabold text-2xl mb-2 text-center">Claim {name}</h1>
-      <p className="text-ink-600 mb-6 text-center">Are you the owner? Claim it to manage your listing.</p>
-      {error && <p className="text-li-red mb-4 text-center">{error}</p>}
-      <div className="text-center">
-        <button onClick={handleClaim} className="bg-ink-900 text-white px-6 py-3 rounded-lg font-semibold hover:bg-ink-800">
-          Claim this Business
-        </button>
-      </div>
+    <>
+      <Nav />
+      <main className="max-w-xl mx-auto px-4 py-10 pb-20">
+        <Link href="/dashboard" className="text-xs text-ink-500 hover:text-ink-900 mb-5 inline-block">← Dashboard</Link>
 
-      {/* Box AI ownership verification */}
-      {identities.length > 0 && (
-        <section className="mt-10 border border-ink-150 rounded-xl p-5">
-          <div className="flex items-center gap-2 mb-1">
-            <ShieldCheck className="w-5 h-5 text-li-teal" />
-            <h2 className="font-semibold text-lg">Verify your ownership</h2>
-          </div>
-          <p className="text-sm text-ink-500 mb-4">
-            Upload a certification (e.g. MBE, WBENC, NGLCC LGBTBE, VOSB) or business license.
-            We read it with <span className="font-semibold">Box AI</span> and confirm it matches this listing —
-            turning a self-reported badge into a verified&nbsp;✓.
-          </p>
+        <div className="hazard-stripe mb-6 -mx-4" />
 
-          <label className="block text-sm font-medium mb-1">Identity to verify</label>
-          <select value={identity} onChange={(e) => setIdentity(e.target.value)}
-            className="w-full border border-ink-200 rounded-lg px-3 py-2 mb-3 text-sm">
-            {identities.map((id) => (
-              <option key={id} value={id}>{IDENTITY_LABELS[id]}{verified.includes(id) ? ' — already verified ✓' : ''}</option>
-            ))}
-          </select>
+        <h1 className="font-formula font-extrabold text-2xl mb-1 stencil">
+          {isUnclaimed ? 'Claim & Verify' : 'Verify Your Listing'}
+        </h1>
+        <p className="text-ink-500 text-sm mb-8">
+          <span className="font-semibold text-ink-900">{biz.name}</span>
+          {isUnclaimed
+            ? ' — claim this listing to manage it, then add verification badges.'
+            : ' — add verified badges to build trust with customers.'}
+        </p>
 
-          <label className="flex items-center gap-2 border border-dashed border-ink-300 rounded-lg px-3 py-3 mb-3 cursor-pointer hover:bg-ink-50 text-sm">
-            <Upload className="w-4 h-4 text-ink-500" />
-            <span className="truncate">{file ? file.name : 'Choose certificate (PDF, JPG, PNG)…'}</span>
-            <input type="file" accept=".pdf,.png,.jpg,.jpeg" className="hidden"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-          </label>
-
-          <button onClick={handleVerify} disabled={!file || submitting}
-            className="w-full bg-li-teal text-ink-1000 font-semibold px-4 py-2.5 rounded-lg hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-2">
-            {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Reading with Box AI…</> : 'Verify with Box AI'}
-          </button>
-
-          {result && (
-            <div className={`mt-4 rounded-lg p-3 text-sm ${
-              result.status === 'verified' ? 'bg-li-green-100 text-li-green-700'
-              : result.status === 'needs_review' ? 'bg-li-yellow-100 text-li-yellow-700'
-              : 'bg-li-red-100 text-li-red-700'}`}>
-              <p className="font-semibold mb-1">
-                {result.status === 'verified' ? `✓ Verified ${result.label}`
-                  : result.status === 'needs_review' ? 'Needs manual review'
-                  : 'Could not verify'}
-              </p>
-              <p className="mb-2">{result.reason}</p>
-              <details className="text-xs opacity-80">
-                <summary className="cursor-pointer">What Box AI read from the document</summary>
-                <ul className="mt-1 space-y-0.5">
-                  {Object.entries(result.extracted).map(([k, v]) => (
-                    <li key={k}><span className="font-medium">{k}:</span> {String(v)}</li>
-                  ))}
-                </ul>
-              </details>
-              <p className="mt-2 text-xs italic">
-                {result.aiLive
-                  ? 'Document stored in Box · read live by Box AI ✓'
-                  : result.boxUploadLive
-                    ? 'Document stored in Box (live) · extraction simulated — enable Box AI on the account to go fully live.'
-                    : 'Dev mock — set BOX_TOKEN to store in Box.'}
-              </p>
+        {/* ── Claim step (only if unclaimed) ── */}
+        {isUnclaimed && (
+          <section className="border border-ink-200 rounded-lg overflow-hidden mb-8">
+            <div className="px-4 py-3 bg-ink-50 border-b border-ink-200">
+              <p className={label} style={{ marginBottom: 0 }}>Step 1 — Claim This Listing</p>
             </div>
-          )}
+            <div className="p-4">
+              <p className="text-xs text-ink-500 mb-4">
+                Confirm you're the owner. This links the listing to your account so you can manage it.
+              </p>
+              {claimError && <p className="text-xs text-[#E0241F] mb-2">{claimError}</p>}
+              <button
+                onClick={handleClaim}
+                disabled={claiming}
+                className="w-full bg-ink-900 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-ink-800 transition-colors disabled:opacity-50"
+              >
+                {claiming ? 'Claiming…' : 'Claim This Business'}
+              </button>
+            </div>
+          </section>
+        )}
 
-          {/* Box Sign ownership attestation */}
-          <div className="mt-5 pt-4 border-t border-ink-150">
-            <p className="text-sm text-ink-600 mb-2">
-              Prefer to attest by signature? Send yourself an ownership attestation to e-sign with <span className="font-semibold">Box Sign</span>.
+        {/* ── Path A: Identity Certification ── */}
+        {verifiableIdentities.length > 0 && (
+          <section className="mb-8">
+            <p className={label}>
+              {isUnclaimed ? 'Step 2 — ' : ''}Certify Your Identity
             </p>
-            <button onClick={handleAttest} disabled={signing}
-              className="inline-flex items-center gap-2 border border-ink-300 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-ink-50 disabled:opacity-40">
-              {signing ? <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</> : <><PenLine className="w-4 h-4" /> Sign attestation with Box Sign</>}
-            </button>
-            {signMsg && <p className="mt-2 text-sm text-li-green-700">{signMsg}</p>}
+            <p className="text-xs text-ink-500 mb-4">
+              Upload an official certification for each identity your business holds. Box AI reads it and confirms it matches your listing automatically.
+            </p>
+            <div className="space-y-4">
+              {verifiableIdentities.map(identity => {
+                const cfg = IDENTITY_CERTS[identity]
+                const isVerified = verifiedSet.has(identity)
+                return (
+                  <div key={identity} className="border border-ink-200 rounded-lg overflow-hidden">
+                    <div className={`flex items-center justify-between px-4 py-3 ${isVerified ? 'bg-[#c9f4e2]' : 'bg-ink-50'} border-b border-ink-200`}>
+                      <div>
+                        <p className="font-semibold text-sm text-ink-900">{cfg.label}</p>
+                        <p className="text-xs text-ink-400">e.g. {cfg.sampleCert}</p>
+                      </div>
+                      {isVerified && (
+                        <span className="text-xs font-bold text-[#0a5c3a] bg-white border border-[#0fae77] px-2 py-0.5 rounded-full shrink-0 ml-2">
+                          ✓ Verified
+                        </span>
+                      )}
+                    </div>
+                    {!isVerified && (
+                      <div className="p-4">
+                        <DocumentUploader
+                          slug={slug}
+                          identity={identity}
+                          identityLabel={cfg.label}
+                          onVerified={() => setVerifiedSet(prev => new Set(Array.from(prev).concat(identity)))}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* ── Path B: Box Sign Attestation ── */}
+        <section className="border border-ink-200 rounded-lg overflow-hidden">
+          <div className="px-4 py-3 bg-ink-50 border-b border-ink-200">
+            <p className={label} style={{ marginBottom: 0 }}>
+              {isUnclaimed && verifiableIdentities.length > 0 ? 'Step 3 — ' : ''}Sign an Ownership Attestation
+            </p>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-ink-500 mb-4">
+              E-sign a short ownership statement sent to{' '}
+              <span className="font-semibold text-ink-700">{userEmail}</span> via Box Sign.
+              This adds an additional layer of verified ownership to your listing.
+            </p>
+
+            {attestState === 'idle' && (
+              <button
+                onClick={sendAttestation}
+                className="w-full bg-ink-900 text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-ink-800 transition-colors"
+              >
+                Send Attestation to Sign
+              </button>
+            )}
+            {attestState === 'sending' && (
+              <p className="text-sm text-ink-400 text-center py-2">Sending…</p>
+            )}
+            {attestState === 'sent' && (
+              <div className="bg-[#c9f4e2] border border-[#0fae77] rounded-lg p-3">
+                <p className="font-semibold text-sm text-[#0a5c3a]">✓ Attestation sent</p>
+                <p className="text-xs mt-0.5 text-[#0a5c3a] opacity-80">
+                  Check <span className="font-semibold">{userEmail}</span> for the Box Sign link.
+                </p>
+              </div>
+            )}
+            {attestState === 'error' && (
+              <div className="space-y-2">
+                <p className="text-xs text-[#E0241F]">{attestError}</p>
+                <button
+                  onClick={() => setAttestState('idle')}
+                  className="text-xs font-bold underline underline-offset-2 text-ink-500 hover:text-ink-900"
+                >
+                  Try again
+                </button>
+              </div>
+            )}
           </div>
         </section>
-      )}
-    </main>
+
+        {verifiableIdentities.length === 0 && !isUnclaimed && (
+          <p className="text-xs text-ink-400 mt-6 text-center">
+            No verifiable identities on this listing.{' '}
+            <Link href="/dashboard" className="underline hover:text-ink-700">Update your profile</Link>{' '}
+            to add identity certifications.
+          </p>
+        )}
+      </main>
+    </>
   )
 }

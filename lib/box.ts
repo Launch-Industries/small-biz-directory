@@ -7,6 +7,7 @@ import 'server-only'
 const { BOX_CLIENT_ID, BOX_CLIENT_SECRET, BOX_ENTERPRISE_ID, BOX_TOKEN } = process.env
 const BOX_FOLDER_ID = process.env.BOX_FOLDER_ID ?? '0'
 const BOX_SIGN_FOLDER_ID = process.env.BOX_SIGN_FOLDER_ID ?? ''
+const BOX_PHOTO_FOLDER_ID = process.env.BOX_PHOTO_FOLDER_ID ?? '0'
 const hasCCG = Boolean(BOX_CLIENT_ID && BOX_CLIENT_SECRET && BOX_ENTERPRISE_ID)
 
 export const boxEnabled = () => hasCCG || Boolean(BOX_TOKEN)
@@ -115,6 +116,42 @@ export async function boxAiExtract(
     console.warn('Box AI Extract error; using mock extraction.', e)
     return { values: mockExtract(), aiLive: false }
   }
+}
+
+// Upload an image to the Box photo folder. Same fail-safe pattern as uploadToBox.
+export async function uploadPhotoToBox(bytes: Buffer, filename: string): Promise<{ fileId: string; sharedLink: string | null; uploadLive: boolean }> {
+  const token = await getAccessToken()
+  if (!token) return { fileId: `mock_${Date.now()}`, sharedLink: null, uploadLive: false }
+
+  const form = new FormData()
+  form.append('attributes', JSON.stringify({ name: filename, parent: { id: BOX_PHOTO_FOLDER_ID } }))
+  form.append('file', new Blob([new Uint8Array(bytes)]), filename)
+
+  let res: Response
+  try {
+    res = await fetch('https://upload.box.com/api/2.0/files/content', {
+      method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form,
+    })
+  } catch {
+    return { fileId: `mock_${Date.now()}`, sharedLink: null, uploadLive: false }
+  }
+  if (!res.ok) {
+    console.warn(`Box photo upload failed (${res.status}); using mock.`)
+    return { fileId: `mock_${Date.now()}`, sharedLink: null, uploadLive: false }
+  }
+  const fileId = (await res.json()).entries[0].id as string
+
+  let sharedLink: string | null = null
+  try {
+    const sl = await fetch(`https://api.box.com/2.0/files/${fileId}`, {
+      method: 'PUT',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ shared_link: { access: 'open' } }),
+    })
+    if (sl.ok) sharedLink = (await sl.json()).shared_link?.download_url ?? (await fetch(`https://api.box.com/2.0/files/${fileId}?fields=shared_link`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).then(j => j.shared_link?.url ?? null).catch(() => null))
+  } catch {}
+
+  return { fileId, sharedLink, uploadLive: true }
 }
 
 // Send a Box Sign request for an ownership attestation. Uploads the attestation
