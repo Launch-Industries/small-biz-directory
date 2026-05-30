@@ -7,7 +7,7 @@
 //   node scripts/scrape-and-enrich.mjs --limit=10 --write # scrape 10 rows + write
 //   node scripts/scrape-and-enrich.mjs --write            # scrape ALL + write
 import { readFileSync } from 'fs'
-import { loadEnv, sbSelect, sbUpdateByPlaceId, runActor, arg } from './lib.mjs'
+import { loadEnv, sbSelect, sbUpdateByPlaceId, runActor, arg, cleanSocial } from './lib.mjs'
 
 const GMAPS_ACTOR = 'compass~crawler-google-places'
 
@@ -64,10 +64,10 @@ export function mapRecord(r) {
     website: r.website ?? undefined,
     phone: r.phone ?? undefined,
     email: first(r.emails) ?? undefined,
-    facebook_url: first(r.facebooks) ?? undefined,
-    instagram_url: first(r.instagrams) ?? undefined,
-    twitter_url: first(r.twitters) ?? undefined,
-    tiktok_url: first(r.tiktoks) ?? undefined,
+    facebook_url: cleanSocial(first(r.facebooks), /facebook\.com\/([^/?#]+)/) ?? undefined,
+    instagram_url: cleanSocial(first(r.instagrams), /instagram\.com\/([^/?#]+)/) ?? undefined,
+    twitter_url: cleanSocial(first(r.twitters), /(?:twitter|x)\.com\/([^/?#]+)/) ?? undefined,
+    tiktok_url: cleanSocial(first(r.tiktoks), /tiktok\.com\/@?([^/?#]+)/) ?? undefined,
     linkedin_url: first(r.linkedIns) ?? undefined,
     youtube_url: first(r.youtubes) ?? undefined,
     thumbnail_url: r.imageUrl ? upsize(r.imageUrl) : undefined,

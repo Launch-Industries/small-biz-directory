@@ -86,6 +86,24 @@ export function domainOf(url) {
   }
 }
 
+// Website footers (Shopify/Wix/Squarespace etc.) and platform-reserved paths
+// leak into scraped social links. These handles are never a real business.
+export const JUNK_HANDLES = new Set([
+  'shopify', 'tv', 'wixstudio', 'wix', 'squarespace', 'godaddy', 'explore',
+  'reel', 'reels', 'p', 'accounts', 'about', 'linktr.ee', 'linktree',
+  'instagram', 'facebook', 'meta', 'weebly', 'square', 'clover', 'toasttab',
+  'doordash', 'ubereats', 'grubhub', 'yelp', 'google', 'mailchimp', 'sharer', 'profile.php',
+])
+export const isJunkHandle = (h) => !h || JUNK_HANDLES.has(h.toLowerCase())
+
+// Return the social URL only if its handle isn't junk, else null.
+export function cleanSocial(url, re) {
+  if (!url) return null
+  const m = url.match(re)
+  const handle = m ? m[1].split('/')[0] : null
+  return isJunkHandle(handle) ? null : url
+}
+
 export const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
   return hit ? hit.split('=')[1] : fallback

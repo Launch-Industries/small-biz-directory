@@ -17,6 +17,7 @@ export interface Business {
   is_lgbtq_friendly: boolean; is_asian_owned: boolean; is_latino_owned: boolean;
   is_veteran_owned: boolean; is_disabled_owned: boolean; is_indigenous_owned: boolean;
   is_transgender_safespace: boolean;
+  verified_identities: string[];
   permanently_closed: boolean; claimed: boolean; claimed_by: string | null;
   owner_description: string | null; owner_hours: string | null;
 }

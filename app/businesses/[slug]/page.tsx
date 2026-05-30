@@ -64,7 +64,9 @@ export default async function BusinessPage({ params }: Props) {
         {/* Identity badges */}
         {biz.business_identities.length > 0 && (
           <div className="flex flex-wrap gap-2 mt-3">
-            {biz.business_identities.map((id) => <IdentityBadge key={id} identity={id} />)}
+            {biz.business_identities.map((id) => (
+              <IdentityBadge key={id} identity={id} verified={biz.verified_identities?.includes(id)} />
+            ))}
           </div>
         )}
 
