@@ -52,7 +52,7 @@ export default function ClaimSearchPage() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const q = e.target.value
     setQuery(q)
-    if (!q.trim()) { setResults(null); setSearched(false); return }
+    if (!q.trim()) { setResults(null); setSearched(false); setSearching(false); return }
     search(q)
   }
 
