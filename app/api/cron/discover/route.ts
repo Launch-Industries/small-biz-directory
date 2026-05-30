@@ -88,6 +88,11 @@ const SHARE_SEARCHES = [
   'flea market', 'salvage store', 'used furniture store', 'donation center',
 ]
 const SAVE_SEARCHES = ['credit union', 'financial planner', 'fee only financial advisor']
+const SPEND_SEARCHES = [
+  'Black-owned business', 'women-owned business', 'LGBTQ-owned business',
+  'Asian-owned business', 'Latino-owned business', 'veteran-owned business',
+  'Indigenous-owned business',
+]
 
 const FINANCIAL_CATEGORIES = new Set([
   'credit union', 'financial planner', 'financial consultant', 'bank',
@@ -134,7 +139,7 @@ export async function GET(req: NextRequest) {
   const locationQuery = 'Washington State, USA'
 
   // Run one actor call with all search terms
-  const allSearches = [...SHARE_SEARCHES, ...SAVE_SEARCHES]
+  const allSearches = [...SHARE_SEARCHES, ...SAVE_SEARCHES, ...SPEND_SEARCHES]
   const items = await runActor(APIFY_TOKEN, {
     searchStringsArray: allSearches,
     locationQuery,
