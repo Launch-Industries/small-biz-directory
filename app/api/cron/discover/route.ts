@@ -82,19 +82,42 @@ async function runActor(token: string, input: object) {
   return items.json()
 }
 
-async function fetchExistingSlugs(url: string, key: string) {
+// Search terms grouped by destination table
+const SHARE_SEARCHES = [
+  'thrift store', 'consignment shop', 'reuse store', 'vintage store',
+  'flea market', 'salvage store', 'used furniture store', 'donation center',
+]
+const SAVE_SEARCHES = ['credit union', 'financial planner', 'fee only financial advisor']
+
+const FINANCIAL_CATEGORIES = new Set([
+  'credit union', 'financial planner', 'financial consultant', 'bank',
+  'atm', 'mortgage lender', 'financial institution', 'investment company',
+])
+
+function classifySaveType(cat: string) {
+  const cl = (cat || '').toLowerCase()
+  if (cl.includes('credit union') || cl.includes('bank') || cl.includes('atm')) return 'credit_union'
+  return 'financial_advisor'
+}
+
+function isFinancial(r: any) {
+  const cat = (r.categoryName || '').toLowerCase()
+  const search = (r.searchString || '').toLowerCase()
+  return FINANCIAL_CATEGORIES.has(cat) || SAVE_SEARCHES.includes(search)
+}
+
+async function fetchSlugs(url: string, key: string, table: string) {
   const slugs = new Set<string>()
   let from = 0
-  const PAGE = 1000
   while (true) {
-    const res = await fetch(`${url}/rest/v1/businesses?select=slug`, {
-      headers: { apikey: key, Authorization: `Bearer ${key}`, Range: `${from}-${from + PAGE - 1}` },
+    const res = await fetch(`${url}/rest/v1/${table}?select=slug`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}`, Range: `${from}-${from + 999}` },
     })
-    if (!res.ok) throw new Error(`slug fetch failed: ${res.status}`)
+    if (!res.ok) break
     const rows: { slug: string }[] = await res.json()
     rows.forEach((r) => r.slug && slugs.add(r.slug))
-    if (rows.length < PAGE) break
-    from += PAGE
+    if (rows.length < 1000) break
+    from += 1000
   }
   return slugs
 }
@@ -108,12 +131,12 @@ export async function GET(req: NextRequest) {
   const SB_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!
   const APIFY_TOKEN = process.env.APIFY_TOKEN!
-
-  const searchStringsArray = ['thrift store', 'consignment shop', 'reuse store']
   const locationQuery = 'Washington State, USA'
 
+  // Run one actor call with all search terms
+  const allSearches = [...SHARE_SEARCHES, ...SAVE_SEARCHES]
   const items = await runActor(APIFY_TOKEN, {
-    searchStringsArray,
+    searchStringsArray: allSearches,
     locationQuery,
     maxCrawledPlacesPerSearch: 50,
     language: 'en',
@@ -123,37 +146,83 @@ export async function GET(req: NextRequest) {
     skipClosedPlaces: true,
   })
 
-  const byPlace = new Map<string, any>()
-  for (const r of items) {
-    const row = mapRecord(r)
-    if (row.place_id && row.name) byPlace.set(row.place_id, row)
-  }
-  const rows = Array.from(byPlace.values())
+  // Split results into financial (save_institutions) vs everything else (businesses)
+  const saveByPlace = new Map<string, any>()
+  const bizByPlace = new Map<string, any>()
 
-  const taken = await fetchExistingSlugs(SB_URL, SERVICE_KEY)
-  for (const row of rows) {
+  for (const r of items) {
+    const pid = r.placeId || r.inputPlaceId
+    if (!pid || !r.title) continue
+    if (isFinancial(r)) {
+      saveByPlace.set(pid, r)
+    } else {
+      bizByPlace.set(pid, r)
+    }
+  }
+
+  // Upsert businesses (Share/Spend)
+  const bizSlugs = await fetchSlugs(SB_URL, SERVICE_KEY, 'businesses')
+  const bizRows = Array.from(bizByPlace.values()).map((r) => {
+    const row = mapRecord(r) as any
     let base = slugify(row.name) || row.place_id.toLowerCase()
     let slug = base
     let n = 1
-    while (taken.has(slug)) { n++; slug = `${base}-${n}` }
-    taken.add(slug)
-    ;(row as any).slug = slug
-  }
+    while (bizSlugs.has(slug)) { n++; slug = `${base}-${n}` }
+    bizSlugs.add(slug)
+    row.slug = slug
+    return row
+  })
 
-  const BATCH = 200
-  for (let i = 0; i < rows.length; i += BATCH) {
+  for (let i = 0; i < bizRows.length; i += 200) {
     const res = await fetch(`${SB_URL}/rest/v1/businesses?on_conflict=place_id`, {
       method: 'POST',
-      headers: {
-        apikey: SERVICE_KEY,
-        Authorization: `Bearer ${SERVICE_KEY}`,
-        'Content-Type': 'application/json',
-        Prefer: 'resolution=merge-duplicates,return=minimal',
-      },
-      body: JSON.stringify(rows.slice(i, i + BATCH)),
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(bizRows.slice(i, i + 200)),
     })
-    if (!res.ok) throw new Error(`upsert failed: ${res.status} ${await res.text()}`)
+    if (!res.ok) throw new Error(`biz upsert failed: ${res.status} ${await res.text()}`)
   }
 
-  return NextResponse.json({ success: true, upserted: rows.length })
+  // Upsert save_institutions (Save)
+  const saveSlugs = await fetchSlugs(SB_URL, SERVICE_KEY, 'save_institutions')
+  const saveRows = Array.from(saveByPlace.values()).map((r) => {
+    const images = (r.imageUrls || []).map((u: string) => upsize(u))
+    let base = slugify(r.title) || r.placeId.toLowerCase()
+    let slug = base
+    let n = 1
+    while (saveSlugs.has(slug)) { n++; slug = `${base}-${n}` }
+    saveSlugs.add(slug)
+    return {
+      place_id: r.placeId || r.inputPlaceId,
+      slug,
+      name: r.title,
+      type: classifySaveType(r.categoryName),
+      category_name: r.categoryName ?? null,
+      categories: r.categories ?? [],
+      address: r.address ?? null,
+      city: r.city ?? null,
+      state: r.state ?? null,
+      postal_code: r.postalCode ?? null,
+      latitude: r.location?.lat ?? null,
+      longitude: r.location?.lng ?? null,
+      website: r.website ?? null,
+      phone: r.phone ?? null,
+      thumbnail_url: r.imageUrl ? upsize(r.imageUrl) : null,
+      image_urls: images,
+      total_score: r.totalScore ?? null,
+      reviews_count: r.reviewsCount ?? null,
+      permanently_closed: r.permanentlyClosed ?? false,
+      source: 'google_maps',
+    }
+  })
+
+  for (let i = 0; i < saveRows.length; i += 200) {
+    const res = await fetch(`${SB_URL}/rest/v1/save_institutions?on_conflict=place_id`, {
+      method: 'POST',
+      headers: { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}`, 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates,return=minimal' },
+      body: JSON.stringify(saveRows.slice(i, i + 200)),
+    })
+    if (!res.ok) throw new Error(`save upsert failed: ${res.status} ${await res.text()}`)
+  }
+
+  return NextResponse.json({ success: true, businesses: bizRows.length, save_institutions: saveRows.length })
 }
