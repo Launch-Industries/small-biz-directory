@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { MapPin, Globe, Star } from 'lucide-react'
 import { DirectoryExplorer, type DirectoryFilters } from './DirectoryExplorer'
+import { DirListingExplorer } from './DirListingExplorer'
 import { IdentityBadge } from './IdentityBadge'
 import { displayableImage } from '@/lib/images'
 import { googleMapsUrl } from '@/lib/links'
@@ -60,6 +61,12 @@ export function SectionTabs({
 
       {active === 'spend' ? (
         <DirectoryExplorer businesses={businesses} initial={initial} />
+      ) : active === 'save' || active === 'share' ? (
+        <DirListingExplorer
+          rows={listings.filter((l) => l.section === active)}
+          section={active}
+          sectionLabel={SECTIONS.find((s) => s.key === active)!.label}
+        />
       ) : (
         <SectionGrid rows={listings.filter((l) => l.section === active)} sectionLabel={SECTIONS.find((s) => s.key === active)!.label} />
       )}

@@ -117,7 +117,7 @@ export function DirectoryExplorer({
 
   return (
     <div className="grid grid-cols-12 gap-6">
-      <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start space-y-6">
+      <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pr-2 space-y-6">
         <CommandSearch businesses={businesses} />
         <Form {...form}>
           <form className="space-y-6" onSubmit={e => e.preventDefault()}>

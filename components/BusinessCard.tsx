@@ -1,7 +1,10 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
 import { Star } from 'lucide-react'
 import { IdentityBadge } from './IdentityBadge'
+import { FavoriteButton } from './FavoriteButton'
 import { Card, CardContent } from '@/components/ui/card'
 import { displayableImage } from '@/lib/images'
 import type { Business } from '@/types/business'
@@ -31,6 +34,9 @@ export function BusinessCard({ business }: { business: Business }) {
               </span>
             </div>
           )}
+          <div className="absolute top-2 right-2">
+            <FavoriteButton entityId={business.id} section="spend" />
+          </div>
         </div>
         <CardContent className="p-4 space-y-2">
           <p className="text-xs font-narrow font-semibold uppercase tracking-widest text-ink-500">
