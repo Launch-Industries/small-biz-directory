@@ -15,7 +15,7 @@ const IDENTITY_LABELS: Record<string, string> = {
   'Identifies as Indigenous-owned': 'Indigenous-Owned',
 }
 
-type Result = { status: string; reason: string; extracted: Record<string, string>; label: string; boxLive: boolean }
+type Result = { status: string; reason: string; extracted: Record<string, string>; label: string; boxUploadLive: boolean; aiLive: boolean }
 
 export default function ClaimPage() {
   const { slug } = useParams<{ slug: string }>()
@@ -138,7 +138,13 @@ export default function ClaimPage() {
                   ))}
                 </ul>
               </details>
-              {!result.boxLive && <p className="mt-2 text-xs italic">Dev mock — set BOX_TOKEN to use live Box AI.</p>}
+              <p className="mt-2 text-xs italic">
+                {result.aiLive
+                  ? 'Document stored in Box · read live by Box AI ✓'
+                  : result.boxUploadLive
+                    ? 'Document stored in Box (live) · extraction simulated — enable Box AI on the account to go fully live.'
+                    : 'Dev mock — set BOX_TOKEN to store in Box.'}
+              </p>
             </div>
           )}
         </section>

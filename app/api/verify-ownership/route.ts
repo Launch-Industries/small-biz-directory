@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase-server'
-import { uploadToBox, boxAiExtract, boxEnabled, setMockContext } from '@/lib/box'
+import { uploadToBox, boxAiExtract, setMockContext } from '@/lib/box'
 import { CERT_FIELDS, IDENTITY_CERTS, decideVerdict } from '@/lib/identity-verify'
 
 export const runtime = 'nodejs'
@@ -35,10 +35,10 @@ export async function POST(req: NextRequest) {
     // 1) upload the document to Box
     const bytes = Buffer.from(await file.arrayBuffer())
     setMockContext({ businessName: biz.name, certType: IDENTITY_CERTS[identity].sampleCert })
-    const { fileId, sharedLink } = await uploadToBox(bytes, `${slug}-${file.name}`)
+    const { fileId, sharedLink, uploadLive } = await uploadToBox(bytes, `${slug}-${file.name}`)
 
-    // 2) Box AI Extract the certificate fields
-    const extracted = await boxAiExtract(fileId, CERT_FIELDS)
+    // 2) Box AI Extract the certificate fields (falls back to mock if AI not enabled)
+    const { values: extracted, aiLive } = await boxAiExtract(fileId, CERT_FIELDS)
 
     // 3) decide a verdict
     const verdict = decideVerdict(identity, biz.name, extracted)
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
         certifying_org: extracted.certifying_organization ?? null,
         cert_expiry: extracted.expiration_date ?? null,
         name_match: verdict.name_match, confidence: verdict.confidence, status: verdict.status,
-        source: boxEnabled() ? 'box_ai' : 'box_ai_dev_mock',
+        source: aiLive ? 'box_ai' : uploadLive ? 'box_upload_live_ai_mock' : 'box_ai_dev_mock',
       }),
     })
 
@@ -69,7 +69,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       status: verdict.status, reason: verdict.reason, extracted,
-      label: IDENTITY_CERTS[identity].label, boxLive: boxEnabled(),
+      label: IDENTITY_CERTS[identity].label,
+      boxUploadLive: uploadLive, aiLive,
     })
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
