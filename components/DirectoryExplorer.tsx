@@ -7,7 +7,6 @@ import { Form, FormField, FormItem, FormControl } from '@/components/ui/form'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Button } from '@/components/ui/button'
 import { BusinessListing } from './BusinessListing'
-import { CommandSearch } from './CommandSearch'
 import { IDENTITY_FILTER_ORDER, IDENTITY_COLORS } from '@/lib/identity-colors'
 import { INDUSTRY_ORDER } from '@/lib/industry'
 import type { Business } from '@/types/business'
@@ -54,6 +53,7 @@ export function DirectoryExplorer({
   const form = useForm<DirectoryFilters>({ defaultValues: { ...EMPTY, ...initial } })
   const values = form.watch()
   const [sort, setSort] = useState<SortKey>('rating')
+  const [search, setSearch] = useState('')
 
   const industries = useMemo(
     () =>
@@ -81,6 +81,10 @@ export function DirectoryExplorer({
       if (c.length && !(b.category_name && c.includes(b.category_name))) return false
       if (l.length && !(locationOf(b) && l.includes(locationOf(b)!))) return false
       if (i.length && !i.some(id => b.business_identities.includes(id))) return false
+      if (search.trim()) {
+        const q = search.toLowerCase()
+        if (!b.name.toLowerCase().includes(q) && !(b.category_name ?? '').toLowerCase().includes(q)) return false
+      }
       return true
     })
   }, [businesses, values])
@@ -118,7 +122,13 @@ export function DirectoryExplorer({
   return (
     <div className="grid grid-cols-12 gap-6">
       <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:pr-2 space-y-6">
-        <CommandSearch businesses={businesses} />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Search businesses…"
+          className="w-full border border-ink-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ink-900"
+        />
         <Form {...form}>
           <form className="space-y-6" onSubmit={e => e.preventDefault()}>
             <div className="flex items-center justify-between">

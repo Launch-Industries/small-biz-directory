@@ -57,7 +57,7 @@ export function DirListingExplorer({
   return (
     <div className="grid grid-cols-12 gap-6">
       {/* Sidebar */}
-      <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:px-1 space-y-5">
+      <aside className="col-span-12 lg:col-span-3 lg:sticky lg:top-20 lg:self-start lg:max-h-[calc(100vh-5.5rem)] lg:overflow-y-auto lg:px-2 space-y-5">
         <input
           type="text"
           value={search}
