@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs'
 
 const SUPABASE_URL = 'https://egnrizeybeihfavzwxfe.supabase.co'
-const SUPABASE_KEY = 'sb_publishable_rl90pw4c5Camv23uTO0D-A_O3K7Egcz'
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 function slugify(name) {
   return name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').trim()
