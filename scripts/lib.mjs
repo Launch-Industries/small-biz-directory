@@ -108,3 +108,38 @@ export const arg = (name, fallback) => {
   const hit = process.argv.find((a) => a.startsWith(`--${name}=`))
   return hit ? hit.split('=')[1] : fallback
 }
+
+// --- fuzzy name matching for cross-source enrichment ----------------------
+export function normalizeName(name) {
+  return (name || '').toLowerCase()
+    .replace(/\b(llc|inc|corp|co|ltd|dba|the)\b/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+// Returns the first existing business that matches by normalized name.
+// Exact match only — substring matching causes too many false positives.
+export function matchBusiness(businesses, name) {
+  const norm = normalizeName(name)
+  if (!norm) return null
+  return businesses.find((b) => normalizeName(b.name) === norm) ?? null
+}
+
+// Upsert a single businesses row (insert or update on place_id conflict).
+export async function sbUpsertBusiness(env, row) {
+  const res = await fetch(
+    `${env.SUPABASE_URL}/rest/v1/businesses?on_conflict=place_id`,
+    {
+      method: 'POST',
+      headers: {
+        apikey: env.SERVICE_KEY,
+        Authorization: `Bearer ${env.SERVICE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates,return=minimal',
+      },
+      body: JSON.stringify(row),
+    },
+  )
+  if (!res.ok) throw new Error(`upsert failed: ${res.status} ${await res.text()}`)
+}
