@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase-server'
 import { IdentityBadge } from '@/components/IdentityBadge'
 import { PhotoGallery } from '@/components/PhotoGallery'
 import { Nav } from '@/components/Nav'
-import { displayableImage } from '@/lib/images'
+import { displayableImage, photoOf } from '@/lib/images'
 import { googleMapsUrl, directionsUrl, socialLinks } from '@/lib/links'
 import { SITE_URL, localBusinessSchema, breadcrumbSchema } from '@/lib/schema'
 import type { Business } from '@/types/business'
@@ -34,7 +34,7 @@ export default async function BusinessPage({ params }: Props) {
   if (!data) notFound()
   const biz = data as Business
   const images = biz.image_urls.map(displayableImage).filter((u): u is string => u !== null)
-  const thumb = displayableImage(biz.thumbnail_url)
+  const thumb = photoOf(biz)
   const gallery = images.length > 0 ? images : thumb ? [thumb] : []
   const socials = socialLinks(biz)
   const hasGeo = biz.latitude != null && biz.longitude != null

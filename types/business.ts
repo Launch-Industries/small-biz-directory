@@ -4,7 +4,7 @@ export interface Business {
   address: string | null; neighborhood: string | null;
   city: string | null; state: string | null; postal_code: string | null;
   latitude: number | null; longitude: number | null;
-  website: string | null; thumbnail_url: string | null; image_urls: string[];
+  website: string | null; thumbnail_url: string | null; directory_photo_url?: string | null; image_urls: string[];
   total_score: number | null; reviews_count: number | null;
   business_identities: string[];
   // contact + social (enrichment)

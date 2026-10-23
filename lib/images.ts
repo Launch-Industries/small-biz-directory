@@ -1,8 +1,17 @@
-// next/image only renders hosts allow-listed in next.config.mjs, and the
-// Street View fallback thumbnails Google returned for photo-less businesses are
-// dead (403). Treat any non-displayable thumbnail as absent so callers fall back
-// to their placeholder instead of crashing the render.
-const DISPLAYABLE_HOSTS = ['googleusercontent.com', 'supabase.co']
+// next/image only renders hosts allow-listed in next.config.mjs. Google's photo
+// links (googleusercontent.com) all return 403 now (checked 2026-10-23), so only
+// Supabase-hosted images count; anything else is treated as absent and callers
+// fall back to their placeholder instead of showing a broken image.
+const DISPLAYABLE_HOSTS = ['supabase.co']
+
+/**
+ * The photo to show for a business: Launch's stored copy (directory_photo_url,
+ * taken from the business's own website) when there is one, else a still-working
+ * thumbnail.
+ */
+export function photoOf(b: { directory_photo_url?: string | null; thumbnail_url?: string | null }): string | null {
+  return displayableImage(b.directory_photo_url) ?? displayableImage(b.thumbnail_url)
+}
 
 export function displayableImage(url: string | null | undefined): string | null {
   if (!url) return null

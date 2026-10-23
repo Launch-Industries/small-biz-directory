@@ -6,7 +6,7 @@ import { Star } from 'lucide-react'
 import { IdentityBadge } from './IdentityBadge'
 import { FavoriteButton } from './FavoriteButton'
 import { Card, CardContent } from '@/components/ui/card'
-import { displayableImage } from '@/lib/images'
+import { photoOf } from '@/lib/images'
 import type { Business } from '@/types/business'
 
 function StarRating({ score }: { score: number }) {
@@ -19,7 +19,7 @@ function StarRating({ score }: { score: number }) {
 }
 
 export function BusinessCard({ business }: { business: Business }) {
-  const thumbnail = displayableImage(business.thumbnail_url)
+  const thumbnail = photoOf(business)
   return (
     <Link href={`/businesses/${business.slug}`} className="group block">
       <Card className="overflow-hidden border-ink-150 p-0 transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
