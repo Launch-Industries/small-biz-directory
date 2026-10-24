@@ -3,6 +3,7 @@ import { Nav } from '@/components/Nav'
 import { type DirectoryFilters } from '@/components/DirectoryExplorer'
 import { SectionTabs, type DirListing } from '@/components/SectionTabs'
 import type { Business } from '@/types/business'
+import { BUSINESS_COLUMNS } from '@/lib/businessColumns'
 
 function parseList(v: string | undefined): string[] {
   return v ? v.split('~').filter(Boolean) : []
@@ -16,7 +17,7 @@ export default async function Home({
   const supabase = await createClient()
   const { data } = await supabase
     .from('businesses')
-    .select('*')
+    .select(BUSINESS_COLUMNS)
     .order('total_score', { ascending: false, nullsFirst: false })
 
   const businesses = (data as Business[] | null) ?? []

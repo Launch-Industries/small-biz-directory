@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase-server'
 import { Nav } from '@/components/Nav'
 import EditForm from './EditForm'
 import type { Business } from '@/types/business'
+import { BUSINESS_COLUMNS } from '@/lib/businessColumns'
 
 const ACTIONS = [
   {
@@ -49,7 +50,7 @@ export default async function DashboardPage() {
   if (!user) redirect('/login')
 
   const supabase = await createClient()
-  const { data } = await supabase.from('businesses').select('*').eq('claimed_by', user.id).single()
+  const { data } = await supabase.from('businesses').select(BUSINESS_COLUMNS).eq('claimed_by', user.id).single()
 
   return (
     <>

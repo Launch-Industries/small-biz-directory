@@ -5,6 +5,7 @@ import { Nav } from '@/components/Nav'
 import { SITE_URL, itemListSchema, breadcrumbSchema } from '@/lib/schema'
 import type { Business } from '@/types/business'
 import type { Metadata } from 'next'
+import { BUSINESS_COLUMNS } from '@/lib/businessColumns'
 
 type Props = { params: Promise<{ identity: string }> }
 
@@ -20,7 +21,7 @@ export default async function IdentityPage({ params }: Props) {
   const supabase = await createClient()
   const { data: businesses } = await supabase
     .from('businesses')
-    .select('*')
+    .select(BUSINESS_COLUMNS)
     .contains('business_identities', [identity])
     .order('total_score', { ascending: false, nullsFirst: false })
     .limit(100)

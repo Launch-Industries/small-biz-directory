@@ -11,6 +11,7 @@ import { googleMapsUrl, directionsUrl, socialLinks } from '@/lib/links'
 import { SITE_URL, localBusinessSchema, breadcrumbSchema } from '@/lib/schema'
 import type { Business } from '@/types/business'
 import type { Metadata } from 'next'
+import { BUSINESS_COLUMNS } from '@/lib/businessColumns'
 
 const BusinessMap = dynamic(() => import('@/components/BusinessMap'), { ssr: false })
 
@@ -19,7 +20,7 @@ type Props = { params: Promise<{ slug: string }> }
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('businesses').select('*').eq('slug', slug).single()
+  const { data } = await supabase.from('businesses').select(BUSINESS_COLUMNS).eq('slug', slug).single()
   if (!data) return {}
   return {
     title: `${data.name} — ${data.category_name ?? 'Seattle Business Directory'}`,
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BusinessPage({ params }: Props) {
   const { slug } = await params
   const supabase = await createClient()
-  const { data } = await supabase.from('businesses').select('*').eq('slug', slug).single()
+  const { data } = await supabase.from('businesses').select(BUSINESS_COLUMNS).eq('slug', slug).single()
   if (!data) notFound()
   const biz = data as Business
   const images = biz.image_urls.map(displayableImage).filter((u): u is string => u !== null)
